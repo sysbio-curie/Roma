@@ -17,4 +17,46 @@ First clone the GitHub repository on your computer with the command:
 git clone https://github.com/sysbio-curie/Roma/ .
 ```
 
-The directory contains a configuration file for building with the [ant](https://en.wikipedia.org/wiki/Apache_Ant) tool. You can compile the files 
+The directory contains a configuration file for building with the [ant](https://en.wikipedia.org/wiki/Apache_Ant) tool. You can compile the files and build the jar file at the same time with:
+
+```
+ant jar
+```
+
+If everything went well, you should see a roma_v1.0.jar file in the directory.
+
+You can now run the program with:
+
+```
+java -jar roma_v1.0.jar
+```
+
+This should give you a list of the options for ROMA:
+
+```
+:: OPTIONS
+REQUIRED:
+:: -dataFile : data in tab-delimited format (required)
+:: -moduleFile : name of the gmt module file  (required)
+Optional:
+:: -outputFolder : folder name for keeping the resulting files (by default it will be the folder of the data file)
+:: -sampleFile : description of samples in tab-delimited txt format
+:: -saveDecomposedFiles : save dat files for each module in the output folder
+:: -outlierThreshold : threshold for determining outliers
+:: -typeOfModuleFile : 0 - for standard GMT, 1 - for GMT with weights (default)
+:: -typeOfPCAUsage : 0 - for standard PCA, 1 - for PCA with fixed center (default)
+:: -robustPCA : 0 - all points are used, 1 - leave one out -based removal of outliers
+:: -robustPCASampling : 0 - all points are used in random sampling, 1 - leave one out -based removal of outliers in random sampling (slow down calculations)
+:: -centerData : 0 - do not center, 1 - center each line
+:: -mostContributingGenesZthreshold : (default 1) threshold (z-value) used to print out the names of the genes most contributing to the component
+:: -diffSpotGenesZthreshold : (default 1) threshold (t-test) used to print out the names of the differentially expressed genes
+:: -fieldForAveraging : (optional) number of the field column used for computing the average module activities (ex: 5)
+:: -fieldValueForAveraging : (optional) value of the field used for computing the reference value of module activity (ex: "normal")
+:: -fieldForDiffAnalysis : (optional) number of the field column used for differential analysis (ex: 5)
+:: -fieldValuesForDiffAnalysis : (optional) values of the field column used for differential analysis separated by % symbol (ex: "invasive%noninvasive")
+:: -numberOfPermutations : (optional) number of samples for empirical p-values estimation
+:: -numberOfGeneSetSizesToSample : (optional) number of random gene set sizes to test for empirical p-values estimation
+:: -minimalNumberOfGenesInModule: minimal size of the gene set
+:: -minimalNumberOfGenesInModuleFound: minimal number of genes in a gene set found in dataset
+
+``
