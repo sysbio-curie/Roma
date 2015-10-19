@@ -11,4 +11,10 @@ ROMA is using the first principal component of a PCA analysis to summarize the c
 
 ## Compilation and installation ##
 
+First clone the GitHub repository on your computer with the command:
 
+```
+git clone https://github.com/sysbio-curie/Roma/ .
+```
+
+The directory contains a configuration file for building with the [ant](https://en.wikipedia.org/wiki/Apache_Ant) tool. You can compile the files 
