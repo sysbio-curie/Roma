@@ -59,4 +59,19 @@ Optional:
 :: -minimalNumberOfGenesInModule: minimal size of the gene set
 :: -minimalNumberOfGenesInModuleFound: minimal number of genes in a gene set found in dataset
 
-``
+```
+
+If you want to run the program fro another directory, you can create a link to the roma jar file, and run it with the same command in the distant directory. 
+
+Another way would be to set the CLASSPATH to include the roma jar file and necessary libraries:
+
+```
+export CLASSPATH="/Users/johndoe/git_roma/roma_v1.0.jar:/Users/johndoe/git_roma/lib/VDAOEngine.jar"
+```
+
+Then you should be able to run ROMA anywhere with:
+
+```
+java fr.curie.ROMA.ModuleActivityAnalysis
+```
+
