@@ -55,6 +55,7 @@ public class ModuleActivityAnalysis {
 	static String fieldValuesForDiffAnalysis = null;
 	
 	static boolean centerData = false;
+	static boolean doubleCenterData = false;
 	static int fillMissingValues = -1;
 	
 	 // Internal parameters
@@ -187,6 +188,8 @@ public class ModuleActivityAnalysis {
 					robustPCAcalculationForSampling = Integer.parseInt(args[i+1])==1;
 				if(args[i].equals("-centerData"))
 					centerData = Integer.parseInt(args[i+1])==1;
+				if(args[i].equals("-doubleCenterData"))
+					doubleCenterData = Integer.parseInt(args[i+1])==1;
 				if(args[i].equals("-fillMissingValues"))
 					fillMissingValues = Integer.parseInt(args[i+1]);
 				if(args[i].equals("-minimalNumberOfGenesInModule"))
@@ -220,6 +223,7 @@ public class ModuleActivityAnalysis {
 			System.out.println(":: -robustPCA : 0 - all points are used, 1 - leave one out -based removal of outliers");
 			System.out.println(":: -robustPCASampling : 0 - all points are used in random sampling, 1 - leave one out -based removal of outliers in random sampling (slow down calculations)");
 			System.out.println(":: -centerData : 0 - do not center, 1 - center each line");
+			System.out.println(":: -doubleCenterData : 0 - do not center, 1 - center each line and each column");
 			//System.out.println(":: -activitySignsFile : file with definition of the module signs (optional)");
 			System.out.println(":: -mostContributingGenesZthreshold : (default 1) threshold (z-value) used to print out the names of the genes most contributing to the component");
 			System.out.println(":: -diffSpotGenesZthreshold : (default 1) threshold (t-test) used to print out the names of the differentially expressed genes");
@@ -245,6 +249,7 @@ public class ModuleActivityAnalysis {
 			System.out.println("sampleFile= "+sampleFile);
 			System.out.println("moduleFile= "+moduleFile);
 			System.out.println("centerData= "+centerData);			
+			System.out.println("doubleCenterData= "+doubleCenterData);
 			System.out.println("fillMissingValues= "+fillMissingValues);
 			System.out.println("activitySignsFile= "+activitySignsFile);
 			System.out.println("mostContributingGenesZthreshold= "+mostContributingGenesZthreshold);
@@ -386,10 +391,26 @@ public class ModuleActivityAnalysis {
 			System.out.println("Centering data (zero mean for any gene)...");
 			table = TableUtils.normalizeVDat(table, true, false);
 			String _fn = dataFile;
-			if(dataFile.endsWith(".dat"))
-				_fn = dataFile.substring(0, dataFile.length()-4);
+			_fn = dataFile.substring(0, dataFile.length()-4);
 			VDatReadWrite.saveToVDatFile(table, _fn+"_centered.dat");
 		}
+		if(doubleCenterData){
+			System.out.println("Double centering data (zero mean for any gene and for any sample)...");
+			VDataSet vd = VSimpleProcedures.SimplyPreparedDatasetWithoutNormalization(table, -1);
+			float mas[][] = TableUtils.doubleCenterMatrix(vd.massif);
+			for(int l=0;l<table.rowCount;l++){
+				int k=0;
+				for(int s=0;s<table.colCount;s++){
+					table.stringTable[l][s] = ""+mas[s][k];
+					if(table.fieldTypes[s]==table.NUMERICAL)
+						k++;
+				}
+			}
+			String _fn = dataFile;
+			_fn = dataFile.substring(0, dataFile.length()-4);
+			VDatReadWrite.saveToVDatFile(table, _fn+"_doublecentered.dat");
+		}
+		
 		
 		if(table.fieldNumByName(geneField)==-1)
 			for(int i=0;i<table.colCount;i++){
@@ -999,6 +1020,7 @@ public class ModuleActivityAnalysis {
 			}
 			}
 		}
+		classes.add("_");
 		int normalClass = classes.indexOf(normalClassLabel);		
 		System.out.println("Normal class = "+normalClass);
 		Vector stats = new Vector();
@@ -1023,6 +1045,8 @@ public class ModuleActivityAnalysis {
 			String cl = transp.stringTable[i][transp.fieldNumByName(field)];
 			if(cl!=null){
 				int k = classes.indexOf(cl);
+				if(k==-1)
+					System.out.println("Lavel "+cl+" not found");
 				((VStatistics)stats.get(k)).addNewPoint(f);
 			}
 		}

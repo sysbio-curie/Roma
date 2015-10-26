@@ -974,6 +974,39 @@ public class TableUtils {
 		return num;
 	}
 	
+	public static float[][] doubleCenterMatrix(float matrix[][]){
+		float res[][] = matrix.clone();
+		
+		int n = matrix.length;
+		int m = matrix[0].length;
+		float sumPerRow[] = new float[n];
+		int countInRow[] = new int[n];
+		float sumPerColumn[] = new float[m];
+		int countInColumn[] = new int[m];
+		int countTotal = 0;
+		float totalSum = 0f;
+		for(int i=0;i<n;i++){
+			for(int j=0;j<m;j++)if(!Float.isNaN(matrix[i][j])){
+				totalSum+=matrix[i][j];
+				sumPerRow[i]+=matrix[i][j];
+				countInRow[i]++;
+				countTotal++;
+			}
+		}
+		for(int j=0;j<m;j++){
+			for(int i=0;i<n;i++)if(!Float.isNaN(matrix[i][j])){
+				sumPerColumn[j]+=matrix[i][j];
+				countInColumn[j]++;
+			}
+		}
+		for(int i=0;i<n;i++){
+			for(int j=0;j<m;j++){
+				res[i][j] = matrix[i][j]-1/(float)countInRow[i]*sumPerRow[i]-1/(float)countInColumn[j]*sumPerColumn[j]+1/countTotal*totalSum;
+			}
+		}
+		
+		return res;
+	}
 
 
 
