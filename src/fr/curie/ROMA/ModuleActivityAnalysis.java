@@ -12,6 +12,7 @@ import vdaoengine.data.*;
 import vdaoengine.data.io.*;
 import vdaoengine.utils.Algorithms;
 import vdaoengine.utils.Utils;
+import vdaoengine.utils.VSimpleFunctions;
 import vdaoengine.utils.VSimpleProcedures;
 
 
@@ -60,12 +61,16 @@ public class ModuleActivityAnalysis {
 	
 	 // Internal parameters
 	 static float outlierThreshold = 2f;
+	 static float correlationThreshold = 0.6f;
+	 static float graphicalOutputThreshold = 0.05f;
 	 static int outlierDimension = 3;
 	 
 	 // Sampling parameters
 	 static int numberOfPermutations = 100;
 	 static int samplingGeneSetSizes[] = {10,15,20,30,40,50,100,200};
 	 static int numberOfGeneSetSizesToSample = 5;
+	 
+	 //static int 
 	 
 	 static boolean saveDecomposedFiles = false;
 
@@ -95,6 +100,7 @@ public class ModuleActivityAnalysis {
 
 	public static void main(String[] args) {
 		try{
+
 			
 			// Reannotation
 			//VDataTable vt1 = VDatReadWrite.LoadFromVDatFile("c:/datas/moduleactivities/data/bcpublic/bc4c.dat");
@@ -174,6 +180,10 @@ public class ModuleActivityAnalysis {
 					mostContributingGenesZthreshold = Float.parseFloat(args[i+1]);
 				if(args[i].equals("-diffSpotGenesZthreshold"))
 					diffSpotGenesZthreshold = Float.parseFloat(args[i+1]);
+				if(args[i].equals("-correlationThreshold"))
+					correlationThreshold = Float.parseFloat(args[i+1]);
+				if(args[i].equals("-graphicalOutputThreshold"))
+					graphicalOutputThreshold = Float.parseFloat(args[i+1]);
 				if(args[i].equals("-fieldForAveraging"))
 					fieldForAveraging = args[i+1];
 				if(args[i].equals("-fieldValueForAveraging"))
@@ -227,6 +237,8 @@ public class ModuleActivityAnalysis {
 			//System.out.println(":: -activitySignsFile : file with definition of the module signs (optional)");
 			System.out.println(":: -mostContributingGenesZthreshold : (default 1) threshold (z-value) used to print out the names of the genes most contributing to the component");
 			System.out.println(":: -diffSpotGenesZthreshold : (default 1) threshold (t-test) used to print out the names of the differentially expressed genes");
+			System.out.println(":: -correlationThreshold: (default 0.6) threshold used to cut the edges of the module activities correlation graph");
+			System.out.println(":: -graphicalOutputThreshold: (default 0.05) threshold on p-value used limit the number of projection files (_proj.txt) in the output");
 			System.out.println(":: -fieldForAveraging : (optional) number of the field column used for computing the average module activities (ex: 5)");
 			System.out.println(":: -fieldValueForAveraging : (optional) value of the field used for computing the reference value of module activity (ex: \"normal\")");
 			System.out.println(":: -fieldForDiffAnalysis : (optional) number of the field column used for differential analysis (ex: 5)");
@@ -253,7 +265,9 @@ public class ModuleActivityAnalysis {
 			System.out.println("fillMissingValues= "+fillMissingValues);
 			System.out.println("activitySignsFile= "+activitySignsFile);
 			System.out.println("mostContributingGenesZthreshold= "+mostContributingGenesZthreshold);
-			System.out.println("diffSpotGenesZthreshold= "+diffSpotGenesZthreshold);			
+			System.out.println("diffSpotGenesZthreshold= "+diffSpotGenesZthreshold);
+			System.out.println("correlationThreshold= "+correlationThreshold);
+			System.out.println("graphicalOutputThreshold= "+graphicalOutputThreshold);
 			System.out.println("typeOfPCAUsage= "+typeOfPCAUsage);
 			System.out.println("robustPCACalculation= "+robustPCAcalculation);
 			System.out.println("robustPCACalculationForSampling= "+robustPCAcalculationForSampling);
@@ -995,6 +1009,17 @@ public class ModuleActivityAnalysis {
 		VDatReadWrite.saveToVDatFile(moduleTable, outputFolder+"moduletable_simple.dat");
 		VDatReadWrite.saveToSimpleDatFile(moduleTable, outputFolder+"moduletable_simple.txt", true);
 		
+		VDataTable tablescores = VDatReadWrite.LoadFromSimpleDatFile(outputFolder+"module_scores.xls", true, "\t");
+		VDataTable moduleTableWithScores = VSimpleProcedures.MergeTables(moduleTable, moduleTable.fieldNames[0], tablescores, tablescores.fieldNames[0], "0");
+		VDatReadWrite.saveToVDatFile(moduleTableWithScores, outputFolder+"moduletable_withscores.dat");
+		VDatReadWrite.saveToSimpleDatFile(moduleTableWithScores, outputFolder+"moduletable_withscores.txt", true);
+		
+		VDataTable vt = VDatReadWrite.LoadFromSimpleDatFile(outputFolder+"moduletable_simple.txt", true, "\t");
+		VSimpleProcedures.findAllNumericalColumns(vt);
+		VSimpleFunctions.makeCorrelationTable(vt,correlationThreshold,outputFolder+"module_correlations"+correlationThreshold+".txt");
+
+
+		
 		VDataTable moduleTableT = moduleTable.transposeTable(geneField);
 		if(sampleTable!=null)
 			moduleTableT = VSimpleProcedures.MergeTables(moduleTableT, "NAME", sampleTable, sampleTable.fieldNames[0], "_");
@@ -1350,9 +1375,17 @@ public class ModuleActivityAnalysis {
 			  String name = signatures.get(i).name;
 			  tables.get(i).makePrimaryHash(tables.get(i).fieldNames[0]);
 			  
-			  int density[] = analyseGlobalProjectionDensity(globalProjections.get(i),10,0.15f,(int)(0.1f*table.rowCount));
+				Metagene mg = (Metagene)signatures.get(i);
+				double values[] = new double[3];
+				values[0] = explainedVariances.get(i)[0];
+				values[1] = explainedVariances.get(i)[1];
+				values[2] = values[0]/values[1];
+				float pvalues[] = calcPValue4ExplainedVariance(explainedVariances_randomDistributions,mg.geneNames.size(),values);
 			  
-			  if(saveDecomposedFiles){
+			  if(saveDecomposedFiles)if((pvalues[0]<=graphicalOutputThreshold)||(pvalues[2]<=graphicalOutputThreshold)){
+				  
+			  int density[] = analyseGlobalProjectionDensity(globalProjections.get(i),10,0.15f,(int)(0.1f*table.rowCount));
+				  
 			  FileWriter fw1 = new FileWriter(outputFolder+name+"_projs.txt");
 			  FileWriter fwst = new FileWriter(outputFolder+name+"_stats.txt");
 			  
