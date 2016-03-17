@@ -9,6 +9,9 @@ import vdaoengine.analysis.*;
 public class GMTReader {
   public static void main(String[] args) {
 
+	MergeUPDNSignatures("C:/Datas/ROMA/data/mosaic/oncosig.gmt",true); System.exit(0);
+	  
+	
     //Vector db = readGMTDatabase("c:/datas/msigdb/c2.symbols.gmt");
     Vector db = readGMTDatabase("c:/datas/msigdb/c2.symbols.gmt");
     //writeNameSpaceGMT(db,"c:/datas/msigdb/c2.symbols_u133ab.gmt","c:/datas/msigdb/annots/HG_U133AB_annot.txt");
@@ -49,13 +52,17 @@ public class GMTReader {
   public static Vector<GESignature> readGMTDatabase(String fin){
 	  return readGMTDatabase(fin, -1);
   }
-
+  
   public static Vector<GESignature> readGMTDatabase(String fin, int minimalNumberOfGenesInModule){
+	  return readGMTDatabase(fin, minimalNumberOfGenesInModule, Integer.MAX_VALUE);
+  }
+
+  public static Vector<GESignature> readGMTDatabase(String fin, int minimalNumberOfGenesInModule, int maximalNumberOfGenesInModule){
     Vector res = new Vector();
     try{
       LineNumberReader lr = new LineNumberReader(new FileReader(fin));
       String s = null;
-      while((s=lr.readLine())!=null){
+      while((s=lr.readLine())!=null)if(!s.trim().equals("")){
         StringTokenizer st = new StringTokenizer(s,"\t");
         GESignature gs = new GESignature();
         gs.name = st.nextToken();
@@ -73,7 +80,7 @@ public class GMTReader {
           if(!gs.geneNames.contains(sname))
         	  gs.geneNames.add(sname);
         }
-        if((minimalNumberOfGenesInModule<0)||(gs.geneNames.size()>=minimalNumberOfGenesInModule))
+        if((minimalNumberOfGenesInModule<0)||((gs.geneNames.size()>=minimalNumberOfGenesInModule)&&(gs.geneNames.size()<=maximalNumberOfGenesInModule)))
         	res.add(gs);
       }
     }catch(Exception e){
@@ -87,6 +94,10 @@ public class GMTReader {
   }
   
   public static Vector readGMTDatabaseWithWeights(String fin, int minimalNumberOfGenesInModule){
+	  return readGMTDatabaseWithWeights(fin,minimalNumberOfGenesInModule, Integer.MAX_VALUE);
+  }
+  
+  public static Vector readGMTDatabaseWithWeights(String fin, int minimalNumberOfGenesInModule, int maximalNumberOfGenesInModule){
 	    Vector res = new Vector();
 	    try{
 	      LineNumberReader lr = new LineNumberReader(new FileReader(fin));
@@ -114,7 +125,7 @@ public class GMTReader {
 	        	  gs.weights.add(new Float(weight));
 	          }
 	        }
-	        if((minimalNumberOfGenesInModule<0)||(gs.geneNames.size()>=minimalNumberOfGenesInModule))
+	        if((minimalNumberOfGenesInModule<0)||((gs.geneNames.size()>=minimalNumberOfGenesInModule))&&((gs.geneNames.size()<=maximalNumberOfGenesInModule)))
 	        	res.add(gs);
 	      }
 	    }catch(Exception e){
@@ -321,5 +332,46 @@ public class GMTReader {
       e.printStackTrace();
     }
   }
+  
+	  public static void MergeUPDNSignatures(String fn, boolean putSigns) {
+
+	      GMTReader gmt = new GMTReader();
+	      Vector sigs = gmt.readGMTDatabase(fn);
+
+	      Vector newSig = new Vector();
+	      String suffixdn = "";
+	      String suffixup = "";
+	      if(putSigns) suffixdn+="[-1]";
+	      if(putSigns) suffixup+="[1]";
+
+
+	      for(int i=0;i<sigs.size();i++){
+	        String fndn = ((GESignature)sigs.get(i)).name;
+	        if(fndn.endsWith("_DN")){
+	          fndn = fndn.substring(0,fndn.length()-3);
+	          for(int j=0;j<sigs.size();j++){
+	            String fnup = ((GESignature)sigs.get(j)).name;
+	            if(fnup.equals(fndn+"_UP")){
+	              System.out.println("Found "+fndn);
+	              GESignature gdn = (GESignature)sigs.get(i);
+	              GESignature gup = (GESignature)sigs.get(j);
+	              GESignature nsig = new GESignature();
+	              for(int k=0;k<gdn.geneNames.size();k++)
+	                nsig.geneNames.add(gdn.geneNames.get(k)+suffixdn);
+	              for(int k=0;k<gup.geneNames.size();k++)
+	                nsig.geneNames.add(gup.geneNames.get(k)+suffixup);
+	              nsig.name = fndn;
+	              nsig.probeSets = nsig.geneNames;
+	              newSig.add(nsig);
+	            }
+	          }
+	        }
+	      }
+
+	      String fn1 = fn.substring(0, fn.length()-4)+"_mergedDNUP.gmt";
+	      GMTReader.saveSignaturesTOGMTFormat(newSig,fn1);
+	  }
+
+  
 
 }

@@ -38,6 +38,7 @@ public class ModuleActivityAnalysis {
 	static boolean robustPCAcalculationForSampling = false;
 	
 	static int minimalNumberOfGenesInModule = 10;
+	static int maximalNumberOfGenesInModule = 1000;
 	static int minimalNumberOfGenesInModuleFound = 8;	
 	
 	static String outputFolder = null;
@@ -62,6 +63,7 @@ public class ModuleActivityAnalysis {
 	 // Internal parameters
 	 static float outlierThreshold = 2f;
 	 static float correlationThreshold = 0.6f;
+	 static String commonFactorForPartialCorrelation = null;
 	 static float graphicalOutputThreshold = 0.05f;
 	 static int outlierDimension = 3;
 	 
@@ -100,7 +102,63 @@ public class ModuleActivityAnalysis {
 
 	public static void main(String[] args) {
 		try{
+			
+			/*VDataTable vt = VDatReadWrite.LoadFromSimpleDatFile("C:/Datas/ROMA/data/mosaic/cliques/moduletable_simple.txt", true, "\t");
+			VSimpleProcedures.findAllNumericalColumns(vt);
+			VSimpleFunctions.makeCorrelationTableCorrectedForCommonFactor(vt, 0.6f, "Lessnick_EWS-FLI_All_signature", "C:/Datas/ROMA/data/mosaic/cliques/module_correlations_0.6_EWS_FLI1.txt");
+			System.exit(0);*/
 
+			//Compute metagene-based correlation graph
+			/*File files[] = new File("C:/Datas/ROMA/data/single_cell/single_cell100/").listFiles();
+			//Vector<VDataSet> vts = new Vector<VDataSet>();
+			Vector<float[]> fs = new Vector<float[]>();
+			Vector<String> names = new Vector<String>();
+			int count=0;
+			for(File f: files){
+				if(f.getName().contains("_projs")){
+					count++; 
+					VDataTable vt = VDatReadWrite.LoadFromSimpleDatFile(f.getAbsolutePath(), true, "\t");
+					float ff[] = new float[vt.rowCount];
+					for(int k=0;k<vt.rowCount;k++)
+						ff[k] = Float.parseFloat(vt.stringTable[k][0]);
+					fs.add(ff);
+					names.add(f.getName().substring(0, f.getName().length()-10));
+					System.out.println(count+": "+names.get(names.size()-1));
+				}
+			}
+			//System.out.println("Loaded");
+			FileWriter fw = new FileWriter("C:/Datas/ROMA/data/single_cell/single_cell100/metagene_correlations0.8.txt");
+			fw.write("SET1\tSET2\tCORR\tABSCORR\n");
+			count = 0;
+			for(int i=0;i<names.size();i++){
+				
+				//VDataTable vti = VDatReadWrite.LoadFromSimpleDatFile("C:/Datas/ROMA/data/single_cell/single_cell100/"+names.get(i)+"_projs.txt", true, "\t");
+				//VSimpleProcedures.findAllNumericalColumns(vti);
+				//VDataSet dsi = VSimpleProcedures.SimplyPreparedDatasetWithoutNormalization(vti, -1);
+				
+				for(int j=i+1;j<names.size();j++){
+					
+					//VDataTable vtj = VDatReadWrite.LoadFromSimpleDatFile("C:/Datas/ROMA/data/single_cell/single_cell100/"+names.get(j)+"_projs.txt", true, "\t");
+					//VSimpleProcedures.findAllNumericalColumns(vtj);
+					//VDataSet dsj = VSimpleProcedures.SimplyPreparedDatasetWithoutNormalization(vtj, -1);
+				
+				//float fi[] = new float[dsi.pointCount];
+				//float fj[] = new float[dsj.pointCount];
+				float fi[] = fs.get(i);
+				float fj[] = fs.get(j);
+				
+				//for(int k=0;k<dsi.pointCount;k++) fi[k] = dsi.massif[k][0];
+				//for(int k=0;k<dsj.pointCount;k++) fj[k] = dsj.massif[k][0];
+				float corr = VSimpleFunctions.calcCorrelationCoeff(fi, fj);
+				if(Math.abs(corr)>=0.8){
+					fw.write(names.get(i)+"\t"+names.get(j)+"\t"+corr+"\t"+Math.abs(corr)+"\n");
+				}
+				}
+				System.out.println(count+": "+names.get(i));
+				count++;
+			}
+			fw.close();
+			System.exit(0);*/
 			
 			// Reannotation
 			//VDataTable vt1 = VDatReadWrite.LoadFromVDatFile("c:/datas/moduleactivities/data/bcpublic/bc4c.dat");
@@ -182,6 +240,8 @@ public class ModuleActivityAnalysis {
 					diffSpotGenesZthreshold = Float.parseFloat(args[i+1]);
 				if(args[i].equals("-correlationThreshold"))
 					correlationThreshold = Float.parseFloat(args[i+1]);
+				if(args[i].equals("commonFactorForPartialCorrelation"))
+					commonFactorForPartialCorrelation = args[i+1];
 				if(args[i].equals("-graphicalOutputThreshold"))
 					graphicalOutputThreshold = Float.parseFloat(args[i+1]);
 				if(args[i].equals("-fieldForAveraging"))
@@ -206,6 +266,8 @@ public class ModuleActivityAnalysis {
 					minimalNumberOfGenesInModule = Integer.parseInt(args[i+1]);
 				if(args[i].equals("-minimalNumberOfGenesInModuleFound"))
 					minimalNumberOfGenesInModuleFound = Integer.parseInt(args[i+1]);
+				if(args[i].equals("-maximalNumberOfGenesInModule"))
+					maximalNumberOfGenesInModule = Integer.parseInt(args[i+1]);
 			    if(args[i].equals("-outlierThreshold"))
 			          outlierThreshold = (new Float(args[i+1])).floatValue();
 			    if(args[i].equals("-outlierDimension"))
@@ -238,6 +300,7 @@ public class ModuleActivityAnalysis {
 			System.out.println(":: -mostContributingGenesZthreshold : (default 1) threshold (z-value) used to print out the names of the genes most contributing to the component");
 			System.out.println(":: -diffSpotGenesZthreshold : (default 1) threshold (t-test) used to print out the names of the differentially expressed genes");
 			System.out.println(":: -correlationThreshold: (default 0.6) threshold used to cut the edges of the module activities correlation graph");
+			System.out.println(":: -commonFactorForPartialCorrelation: name of the gene set used for ");
 			System.out.println(":: -graphicalOutputThreshold: (default 0.05) threshold on p-value used limit the number of projection files (_proj.txt) in the output");
 			System.out.println(":: -fieldForAveraging : (optional) number of the field column used for computing the average module activities (ex: 5)");
 			System.out.println(":: -fieldValueForAveraging : (optional) value of the field used for computing the reference value of module activity (ex: \"normal\")");
@@ -246,6 +309,7 @@ public class ModuleActivityAnalysis {
 			System.out.println(":: -numberOfPermutations : (optional) number of samples for empirical p-values estimation");
 			System.out.println(":: -numberOfGeneSetSizesToSample : (optional) number of random gene set sizes to test for empirical p-values estimation");
 			System.out.println(":: -minimalNumberOfGenesInModule: minimal size of the gene set");
+			System.out.println(":: -maximalNumberOfGenesInModule: maximal size of the gene set");
 			System.out.println(":: -minimalNumberOfGenesInModuleFound: minimal number of genes in a gene set found in dataset");
 			
 			}else{
@@ -278,6 +342,7 @@ public class ModuleActivityAnalysis {
 			System.out.println("fieldForDiffAnalysis= "+fieldForDiffAnalysis);
 			System.out.println("fieldValuesForDiffAnalysis= "+fieldValuesForDiffAnalysis);
 			System.out.println("minimalNumberOfGenesInModule= "+minimalNumberOfGenesInModule);			
+			System.out.println("maximalNumberOfGenesInModule= "+maximalNumberOfGenesInModule);
 			System.out.println("minimalNumberOfGenesInModuleFound = "+minimalNumberOfGenesInModuleFound);						
 			System.out.println("============================================");
 			
@@ -314,6 +379,7 @@ public class ModuleActivityAnalysis {
 			ComputeModuleActivities();
 			writeGeneProjectionMatrix();
 			System.out.println(((new Date()).getTime()-d.getTime())/1000f+" secs spent.");
+			
 			
 			System.out.println();
 			System.out.println("============================================");
@@ -435,7 +501,7 @@ public class ModuleActivityAnalysis {
 		
 		
 		if(typeOfModuleFile==STANDARD_GMT){
-		Vector<GESignature> sigs = GMTReader.readGMTDatabase(moduleFile,minimalNumberOfGenesInModule);
+		Vector<GESignature> sigs = GMTReader.readGMTDatabase(moduleFile,minimalNumberOfGenesInModule,maximalNumberOfGenesInModule);
 		for(int i=0;i<sigs.size();i++){
 			Metagene mg = new Metagene(sigs.get(i));
 			mg.probeSets = mg.geneNames;			
@@ -444,7 +510,7 @@ public class ModuleActivityAnalysis {
 		}
 		}
 		if(typeOfModuleFile==GMT_WITH_WEIGHTS){
-			signatures = GMTReader.readGMTDatabaseWithWeights(moduleFile,minimalNumberOfGenesInModule);
+			signatures = GMTReader.readGMTDatabaseWithWeights(moduleFile,minimalNumberOfGenesInModule,maximalNumberOfGenesInModule);
 			for(int i=0;i<signatures.size();i++){
 				Metagene mg = new Metagene(signatures.get(i));
 				mg.probeSets = mg.geneNames;			
@@ -784,7 +850,7 @@ public class ModuleActivityAnalysis {
 				random_tables.add(rtab);
 			}
 			System.out.println();
-			Vector<double[]> rev = calcModuleActivities(vdglobal, random_tables, random_sets, rAs, rSs, null, true);
+			Vector<double[]> rev = calcModuleActivities(vdglobal, random_tables, random_sets, rAs, rSs, null, true,false);
 			Vector<double[]> rev1 = new Vector<double[]>();
 			for(int k=0;k<rev.size();k++){
 				double l1l2[] = rev.get(k);
@@ -819,7 +885,9 @@ public class ModuleActivityAnalysis {
 	 * The values argument contains values[0]=l1 values[1]=l2 values[2]=l1/l2
 	 */
 	public static float[] calcPValue4ExplainedVariance(Vector<Vector<double[]>> randomExplainedVariances, int setSize, double values[]){
-		float pvalues[] = new float[randomExplainedVariances.get(0).get(0).length];
+		float pvalues[] = null;
+		if(randomExplainedVariances!=null)if(randomExplainedVariances.size()>0){
+		pvalues = new float[randomExplainedVariances.get(0).get(0).length];
 		// first, determine the closest set size at logarithmic scale
 		int k = -1;
 		double mindist = Double.MAX_VALUE;
@@ -833,6 +901,9 @@ public class ModuleActivityAnalysis {
 		// Then compute the p-values
 		Vector<double[]> distribution = randomExplainedVariances.get(k);
 		pvalues = calcPValues(distribution, values);
+		}else{
+			pvalues = new float[values.length];
+		}
 		return pvalues;
 	}
 	
@@ -855,18 +926,19 @@ public class ModuleActivityAnalysis {
 	 */
 	public static void ComputeModuleActivities(){
 		VDataSet vdglobal = VSimpleProcedures.SimplyPreparedDataset(table, -1);
-		explainedVariances = calcModuleActivities(vdglobal, tables, signatures, As, Ss, globalProjections, true);
+		explainedVariances = calcModuleActivities(vdglobal, tables, signatures, As, Ss, globalProjections, true, true);
 	}
 	
 	/*
 	 * computing module activities
 	 */
-	public static Vector<double[]> calcModuleActivities(VDataSet vdglobal, Vector<VDataTable> tableList, Vector<Metagene> metagenes, Vector<float [][]> As, Vector<float[][]> Ss, Vector<float[][]> globalSs, boolean dealWithSign){
+	public static Vector<double[]> calcModuleActivities(VDataSet vdglobal, Vector<VDataTable> tableList, Vector<Metagene> metagenes, Vector<float [][]> As, Vector<float[][]> Ss, Vector<float[][]> globalSs, boolean dealWithSign, boolean verbose){
 		Vector<double[]> acts = new Vector<double[]>();
 		
 		for(int i=0;i<tableList.size();i++){
 			VDataTable dat = (VDataTable)tableList.get(i);
-			//System.out.println(metagenes.get(i).name+" "+dat.rowCount);
+			if(verbose)
+				System.out.println(""+(i+1)+"/"+tableList.size()+": "+metagenes.get(i).name+" "+dat.rowCount);
 			Metagene mg = metagenes.get(i);
 			
 			//System.out.println("TP53 weight = "+mg.weightSpecified.get(mg.geneNames.indexOf("TP53")));
@@ -1194,7 +1266,7 @@ public class ModuleActivityAnalysis {
 				for(int j=0;j<tables.size();j++){
 					VDataTable mg = tables.get(j);
 					if(mg.tableHashPrimary.get(gname)==null){
-						fw.write("0\t");
+						fw.write("N/A\t");
 					}else{
 					int k = mg.tableHashPrimary.get(gname).get(0);
 					//if(mg.geneNames.size()!=Ss.get(j).length)
@@ -1318,7 +1390,7 @@ public class ModuleActivityAnalysis {
 		    //Vector<String> v = determineOutliers(ds,geneField,outlierThreshold,outlierDimension);
 			Vector<String> v = leaveOneOutPCAOutliers(ds,geneField,outlierThreshold);
 		    if(v.size()>0)if(verbose)
-		    	System.out.print("ouliers: ");
+		    	System.out.print("outliers: ");
 		    for(int jj=0;jj<v.size();jj++){
 		    		if(verbose)
 		    			System.out.print(v.get(jj)+"\t");
@@ -1380,7 +1452,10 @@ public class ModuleActivityAnalysis {
 				values[0] = explainedVariances.get(i)[0];
 				values[1] = explainedVariances.get(i)[1];
 				values[2] = values[0]/values[1];
-				float pvalues[] = calcPValue4ExplainedVariance(explainedVariances_randomDistributions,mg.geneNames.size(),values);
+				
+				float pvalues[] = new float[2];
+				if(explainedVariances_randomDistributions!=null)
+					pvalues = calcPValue4ExplainedVariance(explainedVariances_randomDistributions,mg.geneNames.size(),values);
 			  
 			  if(saveDecomposedFiles)if((pvalues[0]<=graphicalOutputThreshold)||(pvalues[2]<=graphicalOutputThreshold)){
 				  
