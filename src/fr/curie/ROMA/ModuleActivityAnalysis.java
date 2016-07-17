@@ -75,6 +75,7 @@ public class ModuleActivityAnalysis {
 	 //static int 
 	 
 	 static boolean saveDecomposedFiles = false;
+	 //static boolean produceTxtTables = false;
 
 	
 
@@ -276,6 +277,8 @@ public class ModuleActivityAnalysis {
 			    	numberOfPermutations = (new Integer(args[i+1])).intValue();
 			    if(args[i].equals("-numberOfGeneSetSizesToSample"))
 			    	numberOfGeneSetSizesToSample = (new Integer(args[i+1])).intValue();
+			    //if(args[i].equals("-produceTxtTables"))
+			    //	produceTxtTables = Integer.parseInt(args[i+1])==1;
 			}
 			
 
@@ -289,6 +292,7 @@ public class ModuleActivityAnalysis {
 			System.out.println(":: -outputFolder : folder name for keeping the resulting files (by default it will be the folder of the data file)");
 			System.out.println(":: -sampleFile : description of samples in tab-delimited txt format");
 			System.out.println(":: -saveDecomposedFiles : save dat files for each module in the output folder");
+			System.out.println(":: -produceNumericalTables : in addition to dat files produce purely numerical tables (e.g., for analysis in Matlab)");
 			System.out.println(":: -outlierThreshold : threshold for determining outliers");
 			System.out.println(":: -typeOfModuleFile : 0 - for standard GMT, 1 - for GMT with weights (default)");
 			System.out.println(":: -typeOfPCAUsage : 0 - for standard PCA, 1 - for PCA with fixed center (default)");
@@ -315,7 +319,7 @@ public class ModuleActivityAnalysis {
 			}else{
 
 			
-			
+			VDatReadWrite.useQuotesEverywhere = false;
 			loadData();
 			
 			System.out.println("============================================");
@@ -393,7 +397,7 @@ public class ModuleActivityAnalysis {
 			
 			System.out.println();
 			System.out.println("============================================");
-			System.out.println("        Hot spot genes determination");
+			System.out.println("        Top contributing genes determination");
 			System.out.println("============================================");
 			
 			findMostContributingGenes();
@@ -481,7 +485,7 @@ public class ModuleActivityAnalysis {
 			for(int l=0;l<table.rowCount;l++){
 				int k=0;
 				for(int s=0;s<table.colCount;s++){
-					table.stringTable[l][s] = ""+mas[s][k];
+					table.stringTable[l][s] = ""+mas[l][k];
 					if(table.fieldTypes[s]==table.NUMERICAL)
 						k++;
 				}
@@ -581,11 +585,17 @@ public class ModuleActivityAnalysis {
 				moddata.fieldTypes[moddata.fieldNumByName("WEIGHT")] = moddata.NUMERICAL;
 		
 			if(saveDecomposedFiles){
-			VDatReadWrite.saveToVDatFile(moddata, outputFolder+fn+".dat");
+			//VDatReadWrite.saveToVDatFile(moddata, outputFolder+fn+".dat");
+			//if(produceDatTables){
+				VDatReadWrite.saveToSimpleDatFile(moddata, outputFolder+fn+".txt");
+			//}
 			VDataTable transp = moddata.transposeTable(moddata.fieldNames[0]);
 			if(sampleTable!=null)
 				transp = VSimpleProcedures.MergeTables(transp, "NAME", sampleTable, sampleTable.fieldNames[0], "_");
-			VDatReadWrite.saveToVDatFile(transp, outputFolder+fn+"_T.dat");
+			//VDatReadWrite.saveToVDatFile(transp, outputFolder+fn+"_T.dat");
+			//if(produceDatTables){
+				VDatReadWrite.saveToSimpleDatFile(transp, outputFolder+fn+"_T.txt");
+			//}
 			}
 			
 			if(moddata.fieldNumByName("WEIGHT")!=-1)
